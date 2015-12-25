@@ -19,5 +19,8 @@
   "bugs": {
     "url": "https://github.com/amokrushin/ipw/issues"
   },
-  "homepage": "https://github.com/amokrushin/ipw#readme"
+  "homepage": "https://github.com/amokrushin/ipw#readme",
+  "dependencies": {
+    "am-rmq": "git+https://github.com/amokrushin/am-rmq.git"
+  }
 }
