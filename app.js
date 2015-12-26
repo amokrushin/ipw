@@ -27,6 +27,7 @@ waitSettings( function( err, settings ) {
 } );
 
 rmq.onBroadcast( 'ipw.discovery', controllers.discovery );
+rmq.onBroadcast( 'ipw.update', controllers.update );
 rmq.onQueue( 'ipw.image-processing', {ack: true}, controllers.imageProcessing );
 
 process.on( 'SIGINT', function() {
