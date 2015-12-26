@@ -6,25 +6,32 @@ var async = require( 'async' ),
 
 app.startedAt = Date.now();
 
-function waitSettings( callback ) {
-    logger.info( 'Waiting for settings...' );
-    process.on( 'message', function( data ) {
-        if( data.msg === 'settings' )
-        {
-            logger.info( 'Settings were received' );
-            callback( null, data.content );
-        }
-    } );
+logger.info( 'Image processing worker loaded' );
+
+process.on( 'message', function( data ) {
+    switch( data.msg )
+    {
+        case 'settings':
+            app.settings = data.content;
+            onSettingsReceived();
+            break;
+        case 'uuid':
+            app.uuid = data.content;
+            logger.info( 'Worker UUID', app.uuid );
+            break;
+        default:
+            logger.warn( 'Unknown worker process message received' );
+    }
+} );
+
+function onSettingsReceived() {
+    rmq.connect( app.settings.rmq );
+    logger.info( 'Image processing worker started' );
 }
 
 function onExit() {
     logger.info( 'SIGINT' );
 }
-
-waitSettings( function( err, settings ) {
-    app.settings = settings;
-    rmq.connect( settings.rmq );
-} );
 
 rmq.onBroadcast( 'ipw.discovery', controllers.discovery );
 rmq.onBroadcast( 'ipw.update', controllers.update );
