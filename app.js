@@ -2,6 +2,7 @@ var async = require( 'async' ),
     logger = require( './lib/logger' ),
     rmq = require( 'am-rmq' )( logger ),
     controllers = require( './lib/controllers' ),
+    gcloud = require( 'gcloud' ),
     app = {};
 
 app.startedAt = Date.now();
@@ -13,7 +14,7 @@ process.on( 'message', function( data ) {
     {
         case 'settings':
             app.settings = data.content;
-            onSettingsReceived();
+            initApp();
             break;
         case 'uuid':
             app.uuid = data.content;
@@ -24,18 +25,28 @@ process.on( 'message', function( data ) {
     }
 } );
 
-function onSettingsReceived() {
+
+function initApp() {
     rmq.connect( app.settings.rmq );
+
+    app.gcs = gcloud.storage( {
+        projectId: app.settings.gcs.projectId,
+        credentials: {
+            client_email: app.settings.gcs.credentials.clientEmail,
+            private_key: app.settings.gcs.credentials.privateKey
+        }
+    } );
+
+    rmq.onBroadcast( 'ipw.discovery', controllers.discovery );
+    rmq.onBroadcast( 'ipw.update', controllers.update );
+    rmq.onQueue( 'ipw.request', {ack: true}, controllers.imageProcessing );
+
     logger.info( 'Image processing worker started' );
 }
 
 function onExit() {
     logger.info( 'SIGINT' );
 }
-
-rmq.onBroadcast( 'ipw.discovery', controllers.discovery );
-rmq.onBroadcast( 'ipw.update', controllers.update );
-rmq.onQueue( 'ipw.image-processing', {ack: true}, controllers.imageProcessing );
 
 process.on( 'SIGINT', function() {
     onExit();
